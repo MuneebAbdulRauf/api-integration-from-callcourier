@@ -1,0 +1,156 @@
+// function that runs when shortcode is called
+function tracking-api_callcourier() { 
+?>
+<div class="hdr_blk_shipment_right">
+                            <form method="POST" action="/tracking" style="text-align: center;">
+        <input class="apiinput" type="text" name="tc" id="txtTrackingNumber" placeholder="Track Your Shipment" pattern="([0-9]{5}[-][0-9]{2}[-][0-9]{9})|([0-9]{17})|([0-9]{14})" title="01234-01-012345678 or 12345678901234567" required value>
+        <input type="submit" value="Submit" class="apisubmit" name="apiconnect">
+                             </form>
+       </div>
+<?php
+
+        $NAME = $_POST['tc'];
+	
+	// Initiate curl session in a variable (resource)
+	$curl_handle = curl_init();
+
+	$url = 'https://cod.callcourier.com.pk/api/CallCourier/GetTackingHistory?cn='.$NAME;	
+	$curl = curl_init($url);
+	curl_setopt($curl, CURLOPT_URL, $url);
+	curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+
+	$resp = curl_exec($curl);
+        $error = "No Record Found";
+       
+	// Set the curl URL option
+	curl_setopt($curl_handle, CURLOPT_URL, $url);
+
+	// This option will return data as a string instead of direct output
+	curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, true);
+
+
+	// Execute curl & store data in a variable
+	$curl_data = curl_exec($curl_handle);
+
+	curl_close($curl_handle);
+// Decode JSON into PHP array
+        $response_data = json_decode($curl_data);
+	 
+		 $string = $resp;
+    		$pos = strpos($string, "No Record Found");
+   		 if ($pos == false) {
+       		 	
+	// All user data exists in 'data' object
+
+	// Print data if need to debug
+	//print_r($response_data);
+
+	// Traverse array and display user data
+	foreach ($response_data as $user) {
+	$con = $user->ConsignmentNo;
+        $cname = $user->ConsigneeName;
+        $caddress = "ConsigneeAddress: ".$user->ConsigneeAddress;
+        $corigin = $user->OriginCity;
+        $ccity = $user->ConsigneeCity;
+        $ccontact = $user->ContactNo;
+	$cshipper = $user->ShipperName;
+	$cstatus = $user->ProcessDescForPortal;
+	$cdate = $user->TransactionDate;
+}
+        $conlydate = date('d-F-Y', strtotime($cdate));
+?>
+<div class="row" id="divRecordRow" style="margin-top:20px;">
+                                    <div id="divAllTrackInfo" class="row">
+                                        <div>
+                                            <figure class="wp-block-table">
+                                            <label class="tracking-history">CONSIGNMENT NUMBER: <?php echo $con; ?></label>
+                                            <table>
+                                            <tbody>
+                                                <tr>
+                                                    <td>Shipper</td>
+                                                    <td><label class="col-md-8 font-size-12" id="lblShipperName"><?php echo $cshipper; ?></label></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Consignee</td>
+                                                    <td><label class="col-md-8 font-size-12" id="ConsignName"><?php echo $cname; ?></label></td>
+                                                </tr>
+                                                <tr>
+                                                <td>Origin / Destination</td>
+                                                <td><label class="col-md-8 font-size-12" id="lblOrigon"><?php echo $corigin."/".$ccity; ?></label></td>
+                                                </tr>
+                                            </tbody></table>
+                                            
+                                            </figure>
+                                        </div>
+                                        <div>
+                                            <figure class="wp-block-table">
+                                            <label class="tracking-history">SHIPMENT TRACKING SUMMARY</label>
+                                            <table>
+                                            <tbody>
+                                                <tr>
+                                                    <td>Current Status</td>
+                                                    <td><label class="col-md-8 font-size-12" id="lblCurrentStatus"><?php echo $cstatus; ?></label></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Status Date</td>
+                                                    <td><label class="col-md-8 font-size-12" id="lblDeliveredOn"><?php echo $conlydate; ?></label></td>
+                                                </tr>
+                                                </tbody></table>
+                                        </figure></div>
+
+
+                                                                                <div>
+                                            <figure class="wp-block-table">
+                                            <label class="tracking-history">TRACKING HISTORY</label>
+                                            <table>
+                                            <tbody>
+                                            </tbody></table><table class="table" id="tbltrackHistory">
+                                            <tbody><tr>
+                                                    <td><b>Date</b></td>
+                                                    <td><b>Status</b></td>
+                                                    <td><b>Location</b></td>
+                                            </tr>
+					    
+                                            <?php
+						foreach ($response_data as $user) {
+							?>
+							<tr>
+							<td><?php echo date('d-M-Y', strtotime($user->TransactionDate)); ?></td>
+							<td><?php $desc = $user->ProcessDescForPortal; 
+								  $rname = $user->ReceiverName;
+								if($desc == "DELIVERED") {echo $desc.": Received by ".$rname;}
+								elseif ($desc == "UNDELIVERED"){echo $desc.": Reason for Non-delivery ".$rname;}
+								else {echo $desc;}
+						            ?></td>
+							<td><?php echo $user->HomeBranch; ?></td>
+							</tr>
+					     <?php
+						}
+					    ?>
+				 	    
+                                        </tbody></table>
+                                            
+                                        </figure></div>
+                                        <div class="clear"></div>
+                                    </div>
+                                    <br>
+                                    <div id="thankYouccs">
+                                        <div class="col-md-12">
+                                            Thank you for using the Dropship Courier Service Tracking system. The Tracking result have been produced based on the most current information about your shipment.
+                                        </div>
+                                    </div>
+                                </div>
+<?php
+   		 } 
+			else {
+				?>
+<div align="center">
+  <?php echo "Sorry, No Record Found"; ?>
+</div>
+<?php
+    		 }
+
+
+} 
+// register shortcode
+add_shortcode('trackingapi', 'tracking-api_callcourier');
